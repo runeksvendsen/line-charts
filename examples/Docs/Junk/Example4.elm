@@ -1,9 +1,9 @@
 module Docs.Junk.Example4 exposing (main)
 
+import Browser
 import Html
 import Time
-import Date
-import Date.Format
+import DateFormat
 import LineChart
 import LineChart.Junk as Junk
 import LineChart.Area as Area
@@ -22,7 +22,7 @@ import LineChart.Axis.Intersection as Intersection
 
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
   Browser.sandbox
     { init = init
@@ -72,7 +72,7 @@ chart : Model -> Html.Html Msg
 chart model =
   LineChart.viewCustom
     { y = Axis.default 450 "Weight" .weight
-    , x = Axis.time 700 "Time" .date
+    , x = Axis.time Time.utc 700 "Time" (toFloat << Time.posixToMillis << .date)
     , container = Container.default "line-chart-1"
     , interpolation = Interpolation.default
     , intersection = Intersection.default
@@ -93,12 +93,19 @@ chart model =
 
 formatX : Data -> String
 formatX =
-  .date >> Date.fromTime >> Date.Format.format "%e. %b, %Y"
+  .date >> DateFormat.format
+    [ DateFormat.yearNumber
+    , DateFormat.text "-"
+    , DateFormat.monthFixed
+    , DateFormat.text "-"
+    , DateFormat.dayOfMonthNumber
+    ]
+    Time.utc
 
 
 formatY : Data -> String
 formatY data =
-  toString data.weight ++ "kg"
+  String.fromFloat data.weight ++ "kg"
 
 
 
@@ -110,7 +117,7 @@ type alias Data =
   , weight : Float
   , height : Float
   , income : Float
-  , date : Time.Time
+  , date : Time.Posix
   }
 
 
@@ -146,16 +153,12 @@ average =
   ]
 
 
-dateInterval : Int -> Time.Time
+dateInterval : Int -> Time.Posix
 dateInterval i =
-  4 * year + toFloat i * 21 * year
+  Time.millisToPosix <|
+    4 * yearMillis + i * 21 * yearMillis
 
 
-day : Time.Time
-day =
-  24 * Time.hour
-
-
-year : Time.Time
-year =
-  356 * day
+yearMillis : Int
+yearMillis =
+  356 * 24 * 60 * 60 * 1000
